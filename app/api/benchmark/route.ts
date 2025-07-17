@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
     request.nextUrl.searchParams.get("runInTransaction") || false
   );
   const metrics = getPoolMetrics();
+  console.log("before metrics", metrics);
   const before = Date.now();
   const startConcurrency = concurrency + 1;
   const success = runInTransaction
