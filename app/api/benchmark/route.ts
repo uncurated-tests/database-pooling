@@ -28,9 +28,16 @@ export async function GET(request: NextRequest) {
   );
   const redisConcurrency = parseInt((await redis.get(getRedisKey())) || "0");
   const metrics = getPoolMetrics();
-  console.log("before metrics", metrics, redisConcurrency);
+
   const before = Date.now();
   const startConcurrency = concurrency + 1;
+  console.log("before", {
+    redisConcurrency: redisConcurrency + 1,
+    inFunctionConcurrency: startConcurrency,
+    instanceId,
+    poolMetrics: metrics,
+    runInTransaction,
+  });
   const success = runInTransaction
     ? await transaction(async (client) => {
         return await runQuery(
