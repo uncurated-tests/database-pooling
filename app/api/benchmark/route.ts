@@ -3,7 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { createClient } from "redis";
 
-const redis = createClient();
+const redis = createClient({
+  url: process.env.REDIS_URL,
+});
 const connectPromise = redis.connect();
 
 function sleep(ms: number) {
