@@ -51,10 +51,13 @@ export async function GET(request: NextRequest) {
       })
     : await runQuery(parseInt(sleepMs || "0"), query, redis);
   const queryEnd = Date.now();
+  const redisConcurrencyAfter = parseInt(
+    (await redis.get(getRedisKey())) || "0"
+  );
 
   const data = {
     success,
-    redisConcurrency: redisConcurrency + 1,
+    redisConcurrency: redisConcurrencyAfter,
     inFunctionConcurrency: startConcurrency,
     instanceId,
     poolMetrics: metrics,
