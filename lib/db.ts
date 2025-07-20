@@ -24,6 +24,10 @@ const pool = new Pool({
   connectionTimeoutMillis: 2000, // How long to wait for a connection
 });
 
+pool.on("release", () => {
+  console.log("release", getPoolStatus());
+});
+
 let idleTimeout: string | number | NodeJS.Timeout | null | undefined = null;
 let idleTimeoutResolve: (value: void | PromiseLike<void>) => void = () => {};
 export function allowIdleTimeoutToExpire() {
