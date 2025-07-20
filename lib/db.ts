@@ -21,12 +21,6 @@ const pool = new Pool({
   connectionTimeoutMillis: 2000, // How long to wait for a connection
 });
 
-// Helper function to get a client from the pool
-export async function getClient() {
-  const client = await pool.connect();
-  return client;
-}
-
 // Helper function to execute a query
 export async function query<T = any>(
   text: string,

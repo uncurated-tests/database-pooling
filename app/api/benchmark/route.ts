@@ -26,11 +26,11 @@ export async function GET(request: NextRequest) {
   const runInTransaction = Boolean(
     request.nextUrl.searchParams.get("runInTransaction") || false
   );
-  const redisConcurrency = parseInt((await redis.get(getRedisKey())) || "0");
+  const redisConcurrency = await redis.incr(getRedisKey());
   const metrics = getPoolMetrics();
 
   const before = Date.now();
-  const startConcurrency = concurrency + 1;
+  const startConcurrency = ++concurrency;
   console.log("before", {
     redisConcurrency: redisConcurrency + 1,
     inFunctionConcurrency: startConcurrency,
@@ -38,25 +38,32 @@ export async function GET(request: NextRequest) {
     poolMetrics: metrics,
     runInTransaction,
   });
-  const success = runInTransaction
-    ? await transaction(async (client) => {
-        return await runQuery(
-          parseInt(sleepMs || "0"),
-          async (text, params) => {
-            const result = await client.query(text, params);
-            return result.rows;
-          },
-          redis
-        );
-      })
-    : await runQuery(parseInt(sleepMs || "0"), query, redis);
+  let success = false;
+  let error = null;
+  try {
+    // Execute a simple query to fetch one user
+    success = runInTransaction
+      ? await transaction(async (client) => {
+          return await runQuery(
+            parseInt(sleepMs || "0"),
+            async (text, params) => {
+              const result = await client.query(text, params);
+              return result.rows;
+            }
+          );
+        })
+      : await runQuery(parseInt(sleepMs || "0"), query);
+  } catch (e) {
+    console.error("Error running query:", error);
+    error = e;
+  } finally {
+    concurrency--;
+  }
   const queryEnd = Date.now();
-  const redisConcurrencyAfter = parseInt(
-    (await redis.get(getRedisKey())) || "0"
-  );
-
+  const redisConcurrencyAfter = (await redis.decr(getRedisKey())) || 0;
   const data = {
     success,
+    error,
     redisConcurrency: redisConcurrencyAfter,
     inFunctionConcurrency: startConcurrency,
     instanceId,
@@ -70,18 +77,11 @@ export async function GET(request: NextRequest) {
     },
   };
   console.log("query", data);
-  return NextResponse.json(data);
+  return NextResponse.json(data, { status: error ? 500 : 200 });
 }
 
-async function runQuery(
-  sleepMs: number,
-  runQuery: typeof query,
-  redis: ReturnType<typeof createClient>
-) {
+async function runQuery(sleepMs: number, runQuery: typeof query) {
   try {
-    // Execute a simple query to fetch one user
-    concurrency++;
-    await redis.incr(getRedisKey());
     const users = await runQuery(`
       SELECT id
       FROM users
@@ -95,8 +95,5 @@ async function runQuery(
   } catch (error) {
     console.error("Error running query:", error);
     return false;
-  } finally {
-    concurrency--;
-    await redis.decr(getRedisKey());
   }
 }
