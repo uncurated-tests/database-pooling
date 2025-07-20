@@ -1,4 +1,9 @@
-import { getPoolMetrics, query, transaction } from "@/lib/db";
+import {
+  allowIdleTimeoutToExpire,
+  getPoolMetrics,
+  query,
+  transaction,
+} from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { createClient } from "redis";
@@ -40,6 +45,7 @@ export async function GET(request: NextRequest) {
   });
   let success = false;
   let error = null;
+  allowIdleTimeoutToExpire();
   try {
     // Execute a simple query to fetch one user
     success = runInTransaction
