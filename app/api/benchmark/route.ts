@@ -50,7 +50,6 @@ export async function GET(request: NextRequest) {
   });
   let success = false;
   let error = null;
-  allowIdleTimeoutToExpire();
   try {
     // Execute a simple query to fetch one user
     success = runInTransaction
@@ -69,6 +68,7 @@ export async function GET(request: NextRequest) {
     error = e;
   } finally {
     concurrency--;
+    allowIdleTimeoutToExpire();
   }
   const queryEnd = Date.now();
   const redisConcurrencyAfter = (await redis.decr(getRedisKey())) || 0;
