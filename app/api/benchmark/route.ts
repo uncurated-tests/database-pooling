@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
         })
       : await runQuery(parseInt(sleepMs || "0"), query);
   } catch (e) {
-    console.error("Error running query:", error);
+    console.error("DB error:", e);
     error = e;
   } finally {
     concurrency--;
