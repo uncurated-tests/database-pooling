@@ -36,6 +36,7 @@ export function allowIdleTimeoutToExpire() {
   });
   idleTimeout = setTimeout(() => {
     idleTimeoutResolve?.();
+    console.log("idle timeout expired");
   }, idleTimeoutMillis + 100);
   after(promise);
 }
