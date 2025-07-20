@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { Pool, PoolClient } from "pg";
 
 // Set NODE_TLS_REJECT_UNAUTHORIZED to 0 to bypass SSL certificate validation
@@ -12,14 +13,32 @@ const sslConfig = {
   checkServerIdentity: () => undefined, // Skip server identity check
 };
 
+const idleTimeoutMillis = 5000;
+
 const pool = new Pool({
   connectionString: process.env.POSTGRES_URL,
   ssl: sslConfig,
   // Connection pool configuration
   max: 50, // Maximum number of clients in the pool
-  idleTimeoutMillis: 5000, // How long a client is allowed to remain idle before being closed
+  idleTimeoutMillis, // How long a client is allowed to remain idle before being closed
   connectionTimeoutMillis: 2000, // How long to wait for a connection
 });
+
+let idleTimeout: string | number | NodeJS.Timeout | null | undefined = null;
+let idleTimeoutResolve: (value: void | PromiseLike<void>) => void = () => {};
+export function allowIdleTimeoutToExpire() {
+  if (idleTimeout) {
+    idleTimeoutResolve?.();
+    clearTimeout(idleTimeout);
+  }
+  const promise = new Promise((resolve) => {
+    idleTimeoutResolve = resolve;
+  });
+  idleTimeout = setTimeout(() => {
+    idleTimeoutResolve?.();
+  }, idleTimeoutMillis + 100);
+  after(promise);
+}
 
 // Helper function to execute a query
 export async function query<T = any>(
