@@ -25,6 +25,7 @@ function getRedisKey() {
   return `pooling-benchmark:${deployment}`;
 }
 
+let maxInFunctionConcurrency = 0;
 export async function GET(request: NextRequest) {
   await connectPromise;
   const sleepMs = request.nextUrl.searchParams.get("sleepMs");
@@ -36,6 +37,10 @@ export async function GET(request: NextRequest) {
 
   const before = Date.now();
   const startConcurrency = ++concurrency;
+  maxInFunctionConcurrency = Math.max(
+    maxInFunctionConcurrency,
+    startConcurrency
+  );
   console.log("before", {
     redisConcurrency: redisConcurrency + 1,
     inFunctionConcurrency: startConcurrency,
@@ -72,6 +77,7 @@ export async function GET(request: NextRequest) {
     error,
     redisConcurrency: redisConcurrencyAfter,
     inFunctionConcurrency: startConcurrency,
+    maxInFunctionConcurrency,
     instanceId,
     poolMetrics: metrics,
     runInTransaction,
