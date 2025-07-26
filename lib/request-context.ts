@@ -1,5 +1,3 @@
-type MutateResponseHeadersBeforeFlushHandler = (headers: Headers) => void;
-
 type Context = {
   waitUntil?: (promise: Promise<unknown>) => void;
 };
