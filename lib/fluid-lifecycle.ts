@@ -7,6 +7,8 @@ import type { Pool as MariaDBPoolType } from "mariadb";
 import type { MongoClient as MongoDBClientType } from "mongodb";
 import type { Redis as IoRedisType } from "ioredis";
 import type { Client as CassandraClientType } from "cassandra-driver";
+import { getRequestContext } from "./request-context";
+import { error } from "console";
 
 // Note: Our interfaces are simplified versions that only include the properties
 // needed for lifecycle observation. They are compatible subsets of the actual types.
@@ -191,15 +193,11 @@ function waitUntilIdleTimeout(dbPool: DbPool) {
     console.log("idle timeout expired");
   }, waitTime);
 
-  try {
-    waitUntil(promise);
-  } catch (error) {
-    // This will fail when the release event is triggered outside of request scope.
-    // Nothing we can do in that case.
-    console.warn(
-      "Pool release event triggered outside of request scope",
-      error
-    );
+  const requestContext = getRequestContext();
+  if (requestContext?.waitUntil) {
+    requestContext.waitUntil(promise);
+  } else {
+    console.warn("Pool release event triggered outside of request scope");
   }
 }
 
