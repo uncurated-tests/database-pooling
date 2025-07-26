@@ -1,9 +1,4 @@
-import {
-  allowIdleTimeoutToExpire,
-  getPoolMetrics,
-  query,
-  transaction,
-} from "@/lib/db";
+import { getPoolMetrics, query, transaction } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { createClient } from "redis";
@@ -68,7 +63,6 @@ export async function GET(request: NextRequest) {
     error = e;
   } finally {
     concurrency--;
-    allowIdleTimeoutToExpire();
   }
   const queryEnd = Date.now();
   const redisConcurrencyAfter = (await redis.decr(getRedisKey())) || 0;

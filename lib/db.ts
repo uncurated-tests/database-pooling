@@ -1,5 +1,5 @@
-import { after } from "next/server";
 import { Pool, PoolClient } from "pg";
+import { attachDatabasePool } from "./fluid-lifecycle";
 
 // Set NODE_TLS_REJECT_UNAUTHORIZED to 0 to bypass SSL certificate validation
 // This is a more aggressive approach for self-signed certificates
@@ -23,27 +23,11 @@ const pool = new Pool({
   idleTimeoutMillis, // How long a client is allowed to remain idle before being closed
   connectionTimeoutMillis: 2000, // How long to wait for a connection
 });
+attachDatabasePool(pool);
 
 pool.on("release", () => {
   console.log("release", getPoolStatus());
 });
-
-let idleTimeout: string | number | NodeJS.Timeout | null | undefined = null;
-let idleTimeoutResolve: (value: void | PromiseLike<void>) => void = () => {};
-export function allowIdleTimeoutToExpire() {
-  if (idleTimeout) {
-    idleTimeoutResolve?.();
-    clearTimeout(idleTimeout);
-  }
-  const promise = new Promise((resolve) => {
-    idleTimeoutResolve = resolve;
-  });
-  idleTimeout = setTimeout(() => {
-    idleTimeoutResolve?.();
-    console.log("idle timeout expired");
-  }, idleTimeoutMillis + 100);
-  after(promise);
-}
 
 // Helper function to execute a query
 export async function query<T = any>(
